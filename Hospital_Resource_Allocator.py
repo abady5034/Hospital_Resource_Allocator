@@ -1,4 +1,3 @@
-
 # =====================================
 # Hospital Resource Allocator - Greedy 
 # =====================================
@@ -6,7 +5,6 @@
 #=========================================
 #Data Set
 #=========================================
-
 patients = [
     {"id": 121, "urgency": 5, "type": "Doctor", "arrival": 1},
     {"id": 132, "urgency": 3, "type": "Room", "arrival": 2},
@@ -69,13 +67,19 @@ patients = [
     {"id": 709, "urgency": 1, "type": "Room", "arrival": 1},
     {"id": 812, "urgency": 5, "type": "Equipment", "arrival": 6},
 ]
-
+#=========================================
+#Resources
+#=========================================
+resources = {"Doctor": 5, "Room": 4, "Equipment": 3}
+resource_free = {
+    "Doctor": [0] * 5,
+    "Room": [0] * 4,
+    "Equipment": [0] * 3
+}
 #=========================================
 #Sorting
 #=========================================
-
 def sort_patients(patients):
-
     n=len(patients)  #عدد العناصر اللي جوا الليست
     for i in range(n):
         flag = True
@@ -91,56 +95,37 @@ def sort_patients(patients):
                     patients[j] = patients[j + 1]
                     patients[j + 1] = temp
                     flag=False
-
         if flag:
             break
 sort_patients(patients)
-
-
-#=========================================
-#Resources
-#=========================================
-
-resources = {"Doctor": 5, "Room": 4, "Equipment": 3}
-resource_free = {
-    "Doctor": [0] * 5,
-    "Room": [0] * 4,
-    "Equipment": [0] * 3
-}
-
 #=========================================
 #Greedy Best First Search
 #=========================================
-
 def GBFS_hospital(patients):
-    
-    sort_patients(patients)
-
+    resource_free={
+        "Doctor":[0] *5,
+        "Room":[0]*4,
+        "Equipment":[0]*3     
+    }
     schedule = []
     wait_times = {i: [] for i in range(1, 6)}
     total_busy_time = {"Doctor": 0, "Room": 0, "Equipment": 0}
     not_tread = [] 
-    
-    treated = [False] * len(patients) # اشوف مين اتعالج
+    treated = [False] * len(patients)
     processed_count = 0 
     current_time = 0
-
-      # اختار المرضى الموجودين دلوقتي
     while processed_count < len(patients):
-        # ادور على المرضى الموجودين دلوقتي
         available = [(i, p) for i, p in enumerate(patients) 
-                     if not treated[i] and p['arrival'] <= current_time]
+        if not treated[i] and p['arrival'] <= current_time]
 
         if not available:
-        # بيجيب اقرب وقت المريض هيجي فيه
             next_arrivals = [p['arrival'] for i, p in enumerate(patients) if not treated[i]]
             if next_arrivals:
-             current_time = min(next_arrivals)
-             continue
+                current_time = min(next_arrivals)
+                continue
             else:
                 break
 
-        # بيختار urgency عن arrival  (لو الاتنين == بيختار arrival(-))
         target_idx, patient = max(available, key=lambda x: (x[1]['urgency'], -x[1]['arrival']))
         
         patient_type = patient["type"]
@@ -169,16 +154,12 @@ def GBFS_hospital(patients):
         })
         wait_times[patient['urgency']].append(wait_time)
         total_busy_time[patient_type] += 10
-        
-        # اغير الوقت 
         current_time = min(min(v) for v in resource_free.values())
 
     return schedule, wait_times, total_busy_time, not_tread
-
 #=========================================
 #Simulation
 #=========================================
-
 results, waits, usage, ignored = GBFS_hospital(patients)
 print(f"{'Patient ID':<10} | {'Type':<10} | {'Start':<6} | {'End':<6}")
 print("-" * 55)
@@ -201,11 +182,10 @@ for r_type, busy in usage.items():
     total_available = 120 * resources[r_type]
     percent = (busy / total_available) * 100
     print(f"{r_type}: {percent:.1f}%")
-    
-#=========================================
-#GUI   
-#=========================================
 
+#=========================================
+#GUI
+#=========================================
 import tkinter as tk
 from tkinter import ttk
 
@@ -215,13 +195,9 @@ def run_simulation():
 
     for row in tree.get_children():
         tree.delete(row)
-
-    #  الجدول ن
     for r in results:
         tag = f"urg{r['Urgency']}"
         tree.insert("", "end", values=(r["ID"], r["Type"], r["Start"], r["End"], r["Urgency"]), tags=(tag,))
-
-    #  النتايج
     output_text.delete("1.0", tk.END)
 
     output_text.insert(tk.END, "=== Average Wait Time ===\n")
@@ -237,26 +213,19 @@ def run_simulation():
 
     output_text.insert(tk.END, f"\n=== Untreated Patients ===\n")
     output_text.insert(tk.END, f"Count: {len(ignored)}\nIDs: {ignored}")
-
 root = tk.Tk()
 root.title(" Hospital Resource Allocator")
 root.geometry("1500x1400")
 root.configure(bg="#f0f4f7")
 
-# عنوان
 title = tk.Label(root, text="Hospital Resource Allocator", 
-                 font=("Arial", 18, "bold"), bg="#f0f4f7", fg="#2c3e50")
+                font=("Arial", 18, "bold"), bg="#f0f4f7", fg="#2c3e50")
 title.pack(pady=10)
-
-
-
 btn = tk.Button(root, text="▶ Run Simulation", command=run_simulation,
                 font=("Arial", 12, "bold"),
                 bg="#3498db", fg="white",
                 padx=10, pady=5)
 btn.pack(pady=10)
-
-# Frame للجدول
 frame = tk.Frame(root)
 frame.pack()
 
@@ -268,8 +237,6 @@ for col in columns:
     tree.column(col, anchor="center", width=100)
 
 tree.pack(pady=10,padx=20,fill="both",expand=True)
-
-# ألوان عشان احدد بيها الurgency
 tree.tag_configure("urg5", background="#ff6b6b")  # أحمر
 tree.tag_configure("urg4", background="#ffa94d")  # برتقالي
 tree.tag_configure("urg3", background="#fff176")  # أصفر
